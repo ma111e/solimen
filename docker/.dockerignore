@@ -1,0 +1,53 @@
+# Git
+.git
+.gitignore
+
+# Docker
+docker/
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Build artifacts
+solimen
+server
+cli
+*.exe
+*.dll
+*.so
+*.dylib
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Databases
+*.db
+*.db-shm
+*.db-wal
+
+# Logs
+*.log
+
+# Config
+config.json
+feeds.yml
+
+# Documentation
+*.md
+!README.md
+
+# Temporary
+tmp/
+temp/
+*.tmp
+
+# Node modules (if any)
+node_modules/

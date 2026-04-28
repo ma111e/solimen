@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Downlink DOM Exporter",
+  "version": "2.0",
+  "description": "Exports the full DOM to a local server via WebSocket-coordinated tab management.",
+  "permissions": ["tabs", "alarms"],
+  "chrome_url_overrides": {
+    "newtab": "landing.html"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

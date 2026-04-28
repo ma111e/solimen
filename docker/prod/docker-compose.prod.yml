@@ -1,0 +1,49 @@
+services:
+  solimen:
+    build:
+      image: ghcr.io/ma111e/solimen:1.0.0
+      dockerfile: docker/solimen/Dockerfile
+    container_name: solimen
+    ports:
+      - "${SOLIMEN_HOST:-127.0.0.1}:${SOLIMEN_PORT:-5011}:${SOLIMEN_PORT:-5011}"
+    environment:
+      - SOLIMEN_PORT=${SOLIMEN_PORT:-5011}
+      - SOLIMEN_HOST=${SOLIMEN_HOST:-0.0.0.0}
+      - SOLIMEN_INSTANCES=${SOLIMEN_INSTANCES:-1}
+      - SOLIMEN_USE_SANDBOX=${SOLIMEN_USE_SANDBOX:-false}
+    networks:
+      - solimen-net
+
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:${SOLIMEN_PORT:-5011}/health"]
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+
+    security_opt:
+#      - seccomp:./seccomp/chrome.json  # Allow to keep the sandbox without elevating the container or running Chromium as root (requires --use-sandbox), but requires a compatible kernel
+      - no-new-privileges:true
+
+    cap_drop:
+      - ALL
+    cap_add: # required by supervisor dropping privs 
+      - SETUID
+      - SETGID
+
+    mem_limit: 2g
+    cpus: 1.0
+    pids_limit: 200
+
+    volumes:
+      - solimen-logs:/var/log/supervisor
+
+    restart: unless-stopped
+
+volumes:
+  solimen-logs:
+    driver: local
+
+networks:
+  solimen-net:
+    driver: bridge

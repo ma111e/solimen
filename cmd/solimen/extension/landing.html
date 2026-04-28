@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Downlink</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d0f12;
+      color: #c9d1d9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      gap: 32px;
+    }
+
+    .wordmark {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #4a5568;
+    }
+
+    .status-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #4a5568;
+      transition: background 0.3s;
+    }
+
+    .dot.starting  { background: #d97706; animation: pulse 1.4s ease-in-out infinite; }
+    .dot.ready     { background: #22c55e; }
+    .dot.active    { background: #3b82f6; animation: pulse 1.0s ease-in-out infinite; }
+    .dot.reconnect { background: #ef4444; animation: pulse 1.6s ease-in-out infinite; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1;   transform: scale(1);    }
+      50%       { opacity: 0.4; transform: scale(0.75); }
+    }
+
+    .label {
+      font-size: 14px;
+      color: #6b7280;
+      min-height: 20px;
+      text-align: center;
+    }
+
+    .pending {
+      font-size: 12px;
+      color: #374151;
+      letter-spacing: 0.05em;
+    }
+  </style>
+</head>
+<body>
+  <div class="wordmark">Downlink</div>
+
+  <div class="status-wrap">
+    <div class="dot starting" id="dot"></div>
+    <div class="label" id="label">Starting up…</div>
+    <div class="pending" id="pending"></div>
+  </div>
+
+  <script>
+    const dot     = document.getElementById('dot');
+    const label   = document.getElementById('label');
+    const pending = document.getElementById('pending');
+
+    function render(state, n) {
+      dot.className = 'dot ' + state;
+      switch (state) {
+        case 'starting':
+          label.textContent   = 'Starting up\u2026';
+          pending.textContent = '';
+          break;
+        case 'ready':
+          label.textContent   = 'Ready';
+          pending.textContent = '';
+          break;
+        case 'active':
+          label.textContent   = 'Scraping';
+          pending.textContent = n === 1 ? '1 tab open' : `${n} tabs open`;
+          break;
+        case 'reconnect':
+          label.textContent   = 'Reconnecting\u2026';
+          pending.textContent = '';
+          break;
+      }
+    }
+
+    function refresh() {
+      chrome.runtime.sendMessage({ type: 'get-status' }, response => {
+        if (chrome.runtime.lastError || !response) {
+          render('starting', 0);
+          return;
+        }
+        if (!response.connected) {
+          render('reconnect', 0);
+        } else if (response.pendingTabs > 0) {
+          render('active', response.pendingTabs);
+        } else {
+          render('ready', 0);
+        }
+      });
+    }
+
+    refresh();
+    setInterval(refresh, 2000);
+  </script>
+</body>
+</html>
