@@ -8,8 +8,10 @@
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type !== 'init') return;
 
-  const { requestId, triggers } = message;
-  const { loaded = [], failed = [] } = triggers;
+  const { requestId, triggers = {} } = message;
+  const selectorList = value => Array.isArray(value) ? value : [];
+  const loaded = selectorList(triggers.loaded);
+  const failed = selectorList(triggers.failed);
 
   console.log(`[downlink] init received, requestId=${requestId}`,
     'loaded:', loaded, 'failed:', failed);
@@ -38,16 +40,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     );
   }
 
-  // If no triggers were specified at all, export immediately as loaded.
-  if (loaded.length === 0 && failed.length === 0) {
-    exportDOM('loaded');
-    sendResponse({ ok: true });
-    return;
-  }
-
   function check() {
-    if (allMatch(loaded)) { exportDOM('loaded'); return true; }
     if (allMatch(failed)) { exportDOM('failed'); return true; }
+    if (allMatch(loaded)) { exportDOM('loaded'); return true; }
+    if (loaded.length === 0) { exportDOM('loaded'); return true; }
     return false;
   }
 
