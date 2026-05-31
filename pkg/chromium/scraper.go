@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"downlink/pkg/models"
+	"github.com/ma111e/solimen/pkg/models"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"

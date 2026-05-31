@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	"downlink/pkg/models"
+	"github.com/ma111e/solimen/pkg/models"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sync/singleflight"

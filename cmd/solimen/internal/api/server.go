@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"downlink/cmd/solimen/internal/converter"
-	"downlink/pkg/chromium"
-	"downlink/pkg/models"
+	"github.com/ma111e/solimen/cmd/solimen/internal/converter"
+	"github.com/ma111e/solimen/pkg/chromium"
+	"github.com/ma111e/solimen/pkg/models"
 
 	log "github.com/sirupsen/logrus"
 )

@@ -65,9 +65,9 @@ COPY --from=builder /build/solimen /app/solimen
 COPY --from=builder /build/cmd/solimen/extension /app/extension
 
 # Copy supervisor configuration
-COPY docker/solimen/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-COPY docker/solimen/.env /app/.env
-COPY docker/solimen/.version /app/.version
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY docker/.env /app/.env
+COPY docker/.version /app/.version
 
 # Handle directories and lock down permissions
 RUN mkdir -p /var/log/supervisor \

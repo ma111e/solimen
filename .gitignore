@@ -1,0 +1,19 @@
+# Binary
+/solimen
+
+# Environment
+.env
+!.env.example
+
+# Config
+config.json
+*.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store

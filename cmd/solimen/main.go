@@ -13,8 +13,8 @@ import (
 	"syscall"
 	"time"
 
-	"downlink/cmd/solimen/internal/api"
-	"downlink/pkg/chromium"
+	"github.com/ma111e/solimen/cmd/solimen/internal/api"
+	"github.com/ma111e/solimen/pkg/chromium"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"

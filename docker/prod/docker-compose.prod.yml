@@ -2,7 +2,7 @@ services:
   solimen:
     build:
       image: ghcr.io/ma111e/solimen:1.0.0
-      dockerfile: docker/solimen/Dockerfile
+      dockerfile: docker/Dockerfile
     container_name: solimen
     ports:
       - "${SOLIMEN_HOST:-127.0.0.1}:${SOLIMEN_PORT:-5011}:${SOLIMEN_PORT:-5011}"
