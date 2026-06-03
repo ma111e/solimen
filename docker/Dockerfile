@@ -24,6 +24,8 @@ RUN adduser --disabled-password --gecos "" --shell /usr/sbin/nologin appuser
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     chromium \
+    # HTML-to-PDF rendering for the "pdf" output format
+    wkhtmltopdf \
     # Fonts for proper rendering
     fonts-liberation \
     fonts-noto-color-emoji \

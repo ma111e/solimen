@@ -13,7 +13,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   const loaded = selectorList(triggers.loaded);
   const failed = selectorList(triggers.failed);
 
-  console.log(`[downlink] init received, requestId=${requestId}`,
+  console.log(`[solimen] init received, requestId=${requestId}`,
     'loaded:', loaded, 'failed:', failed);
 
   let exported = false;
@@ -27,15 +27,15 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   function exportDOM(state) {
     if (exported) return;
     exported = true;
-    console.log(`[downlink] exporting DOM, state=${state}, requestId=${requestId}`);
+    console.log(`[solimen] exporting DOM, state=${state}, requestId=${requestId}`);
     chrome.runtime.sendMessage(
       { type: 'dom-ready', requestId, state, html: document.documentElement.outerHTML },
       response => {
         if (chrome.runtime.lastError) {
-          console.warn('[downlink] sendMessage error:', chrome.runtime.lastError.message);
+          console.warn('[solimen] sendMessage error:', chrome.runtime.lastError.message);
           return;
         }
-        console.log('[downlink] dom-ready ack:', response);
+        console.log('[solimen] dom-ready ack:', response);
       }
     );
   }

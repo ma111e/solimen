@@ -28,9 +28,9 @@ chrome.alarms.create('keepalive', { periodInMinutes: 0.4 });
     const resp = await fetch(chrome.runtime.getURL('runtime-config.json'));
     const cfg  = await resp.json();
     port = cfg.port;
-    console.log(`[downlink:bg] loaded config, port=${port}`);
+    console.log(`[solimen:bg] loaded config, port=${port}`);
   } catch (e) {
-    console.error('[downlink:bg] failed to load runtime-config.json:', e);
+    console.error('[solimen:bg] failed to load runtime-config.json:', e);
     return;
   }
 
@@ -46,7 +46,7 @@ chrome.alarms.onAlarm.addListener(alarm => {
     // No-op — waking up is sufficient to reset the suspension timer.
     // Optionally reconnect if the WS dropped while the SW was suspended.
     if (ws === null && port !== null) {
-      console.log('[downlink:bg] keepalive alarm: WebSocket gone, reconnecting');
+      console.log('[solimen:bg] keepalive alarm: WebSocket gone, reconnecting');
       connectWS();
     }
   }
@@ -55,11 +55,11 @@ chrome.alarms.onAlarm.addListener(alarm => {
 // ── WebSocket ─────────────────────────────────────────────────────────────────
 
 function connectWS() {
-  console.log(`[downlink:bg] connecting WebSocket to ws://127.0.0.1:${port}/ws`);
+  console.log(`[solimen:bg] connecting WebSocket to ws://127.0.0.1:${port}/ws`);
   ws = new WebSocket(`ws://127.0.0.1:${port}/ws`);
 
   ws.onopen = () => {
-    console.log('[downlink:bg] WebSocket connected');
+    console.log('[solimen:bg] WebSocket connected');
     reconnectDelay = WS_RECONNECT_BASE_MS;
   };
 
@@ -67,7 +67,7 @@ function connectWS() {
 
   ws.onclose = ws.onerror = () => {
     ws = null;
-    console.log(`[downlink:bg] WebSocket disconnected, reconnecting in ${reconnectDelay}ms`);
+    console.log(`[solimen:bg] WebSocket disconnected, reconnecting in ${reconnectDelay}ms`);
     setTimeout(connectWS, reconnectDelay);
     reconnectDelay = Math.min(reconnectDelay * 2, WS_RECONNECT_MAX_MS);
   };
@@ -78,24 +78,24 @@ async function handleWSMessage(event) {
   try {
     msg = JSON.parse(event.data);
   } catch (e) {
-    console.error('[downlink:bg] failed to parse WS message:', e);
+    console.error('[solimen:bg] failed to parse WS message:', e);
     return;
   }
 
   if (msg.type === 'ping') return;
   if (msg.type !== 'scrape') {
-    console.warn('[downlink:bg] unknown message type:', msg.type);
+    console.warn('[solimen:bg] unknown message type:', msg.type);
     return;
   }
 
   const { requestId, url, triggers } = msg;
-  console.log(`[downlink:bg] scrape ${requestId} → ${url}`);
+  console.log(`[solimen:bg] scrape ${requestId} → ${url}`);
 
   // Set up per-tab timeout (slightly under the server's 30s to let it log first).
   const timeoutHandle = setTimeout(() => {
     if (!pendingTabs.has(tabId)) return;
     pendingTabs.delete(tabId);
-    console.error(`[downlink:bg] timeout for tab ${tabId} (${requestId})`);
+    console.error(`[solimen:bg] timeout for tab ${tabId} (${requestId})`);
     chrome.tabs.remove(tabId).catch(() => {});
   }, 28000);
 
@@ -107,7 +107,7 @@ async function handleWSMessage(event) {
     tabId = tab.id;
   } catch (e) {
     clearTimeout(timeoutHandle);
-    console.error('[downlink:bg] failed to create tab:', e);
+    console.error('[solimen:bg] failed to create tab:', e);
     return;
   }
 
@@ -148,7 +148,7 @@ async function sendInitMessage(tabId, pending) {
     try {
       await chrome.tabs.sendMessage(tabId, { type: 'init', requestId, triggers });
     } catch (err2) {
-      console.error(`[downlink:bg] failed to send init to tab ${tabId} (${requestId}):`, err2);
+      console.error(`[solimen:bg] failed to send init to tab ${tabId} (${requestId}):`, err2);
       chrome.tabs.remove(tabId).catch(() => {});
     }
   }
@@ -172,23 +172,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   const { requestId, state, html } = message;
   const tabId = sender.tab?.id;
-  console.log(`[downlink:bg] dom-ready from tab ${tabId} (${requestId}), state=${state}`);
+  console.log(`[solimen:bg] dom-ready from tab ${tabId} (${requestId}), state=${state}`);
 
   fetch(`http://127.0.0.1:${port}/dom`, {
     method: 'POST',
     headers: {
       'Content-Type':       'text/html',
-      'X-Downlink-Request-Id':  requestId,
-      'X-Downlink-State':       state,
+      'X-Solimen-Request-Id':  requestId,
+      'X-Solimen-State':       state,
     },
     body: html,
   })
     .then(() => {
-      console.log(`[downlink:bg] DOM posted for ${requestId}`);
+      console.log(`[solimen:bg] DOM posted for ${requestId}`);
       sendResponse({ ok: true });
     })
     .catch(err => {
-      console.error(`[downlink:bg] failed to POST DOM for ${requestId}:`, err);
+      console.error(`[solimen:bg] failed to POST DOM for ${requestId}:`, err);
       sendResponse({ ok: false, error: err.message });
     })
     .finally(() => {

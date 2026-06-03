@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Downlink DOM Exporter",
+  "name": "Solimen DOM Exporter",
   "version": "2.0",
   "description": "Exports the full DOM to a local server via WebSocket-coordinated tab management.",
   "permissions": ["tabs", "alarms"],

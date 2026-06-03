@@ -37,7 +37,7 @@ type Scraper interface {
 // the local extension. Each call to Scrape opens a new background tab,
 // waits for the extension to POST the full DOM, and closes the tab.
 // Request correlation is guaranteed via a per-request UUID sent through both
-// the WebSocket command and the X-Downlink-Request-Id HTTP header.
+// the WebSocket command and the X-Solimen-Request-Id HTTP header.
 type ChromiumScraper struct {
 	extDir    string
 	index     int  // used to derive a unique user-data-dir suffix
@@ -108,7 +108,7 @@ func (s *ChromiumScraper) Start() error {
 		return fmt.Errorf("chromium scraper: failed to create user-data-dir: %w", err)
 	}
 
-	s.userDataDir, err = os.MkdirTemp(cacheDir, "downlink-chromium-*")
+	s.userDataDir, err = os.MkdirTemp(cacheDir, "solimen-chromium-*")
 	if err != nil {
 		ln.Close()
 		return fmt.Errorf("chromium scraper: failed to generate temp dir name: %w", err)
@@ -261,20 +261,20 @@ func (s *ChromiumScraper) wsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // domHandler receives the full DOM from the extension via HTTP POST and routes it
-// to the correct in-flight Scrape call using the X-Downlink-Request-Id header.
+// to the correct in-flight Scrape call using the X-Solimen-Request-Id header.
 func (s *ChromiumScraper) domHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	requestId := r.Header.Get("X-Downlink-Request-Id")
+	requestId := r.Header.Get("X-Solimen-Request-Id")
 	if requestId == "" {
-		http.Error(w, "missing X-Downlink-Request-Id", http.StatusBadRequest)
+		http.Error(w, "missing X-Solimen-Request-Id", http.StatusBadRequest)
 		return
 	}
 
-	state := r.Header.Get("X-Downlink-State")
+	state := r.Header.Get("X-Solimen-State")
 	if state == "" {
 		state = "loaded"
 	}
