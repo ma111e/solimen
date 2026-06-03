@@ -117,8 +117,8 @@ least one element:
 }
 ```
 
-- `loaded` — selectors that indicate a successful render.
-- `failed` — selectors that indicate the page failed to load.
+- `loaded` selectors that indicate a successful render.
+- `failed` selectors that indicate the page failed to load.
 
 If `loaded` is empty, the DOM is exported as soon as the page finishes loading.
 Scraping times out after 30 seconds if no trigger matches.
