@@ -94,6 +94,17 @@ Every flag can also be set via a `SOLIMEN_`-prefixed environment variable.
 | `--ext-dir` | `SOLIMEN_EXT_DIR` | _(embedded)_ | Path to a Chromium extension directory, overriding the embedded one |
 | `--use-sandbox` | `SOLIMEN_USE_SANDBOX` | `false` | Enable the Chromium sandbox (off by default; most container environments require it off) |
 
+#### Instances
+
+`--instances` controls how many independent Chromium processes are launched.
+Requests are dispatched across them round-robin. A single instance can already
+handle several scrapes at once (one background tab per request), so one is enough
+for light or sequential use. Raising the count helps when you expect many
+concurrent requests: it spreads the load across separate browsers, so a slow or
+heavy page doesn't hold up others. Each instance is a full browser, so the memory
+cost scales with the count. When running several in the container, raise the
+compose `mem_limit` (2 GB by default) accordingly.
+
 ## API
 
 ### `POST /scrape`
@@ -130,7 +141,7 @@ Scraping times out after 30 seconds if no trigger matches.
 | `html` | The raw rendered DOM. |
 | `markdown` | HTML converted to Markdown, with relative links resolved against the page URL. |
 | `pdf` | HTML rendered to PDF with wkhtmltopdf, preserving layout and styling. Requires the `wkhtmltopdf` binary. |
-| `pdf-simplified` | HTML converted to Markdown, then to a clean, de-styled PDF document. Pure Go, no external binary. |
+| `pdf-simplified` | HTML converted to Markdown, then to a clean, de-styled PDF document. |
 
 Response:
 
@@ -189,8 +200,14 @@ SOLIMEN_INSTANCES=2 docker compose -f docker/docker-compose.yml up --build
 
 The compose file drops all Linux capabilities and disables the Chromium sandbox
 (`SOLIMEN_USE_SANDBOX=false`), which is the supported configuration for most
-container runtimes. A seccomp profile (`docker/seccomp/chrome.json`) is provided,
-commented out, for keeping the sandbox enabled on compatible kernels.
+container runtimes.
+
+A commented-out seccomp profile (`docker/seccomp/chrome.json`) is also included.
+The intent was to keep the Chromium sandbox enabled while still running the
+container as an unprivileged user, since the sandbox otherwise needs elevated
+privileges. That profile is not currently working and is not maintained; it is
+left in place only as a starting point for anyone who wants to pursue that setup.
+It is currently not a supported feature.
 
 A production compose file using the published `ghcr.io/ma111e/solimen` image is in
 [docker/prod/docker-compose.prod.yml](docker/prod/docker-compose.prod.yml).
