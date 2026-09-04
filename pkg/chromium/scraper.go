@@ -21,6 +21,11 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
+// diskCacheBytes caps Chromium's on-disk HTTP cache. Profiles are reused across
+// restarts, so without a cap Default/Cache drifts up to Chromium's auto-computed
+// ceiling (hundreds of MB per instance).
+const diskCacheBytes = 100 << 20
+
 // ScrapeResult contains the raw DOM and completion state from the extension.
 type ScrapeResult struct {
 	HTML  string
@@ -96,22 +101,19 @@ func (s *ChromiumScraper) Start() error {
 	}
 	s.port = ln.Addr().(*net.TCPAddr).Port
 
-	// 2. Create a persistent user-data-dir so cookies/sessions survive across scrapes.
+	// 2. Reuse a stable per-instance user-data-dir: cookies and sessions survive
+	// restarts, and disk usage is bounded by --instances instead of growing by one
+	// profile per process start.
 	cacheDir, err := os.UserCacheDir()
 	if err != nil {
 		ln.Close()
 		return fmt.Errorf("chromium scraper: failed to get cache dir: %w", err)
 	}
 
-	if err := os.MkdirAll(cacheDir, 0755); err != nil {
+	s.userDataDir = filepath.Join(cacheDir, "solimen", fmt.Sprintf("instance-%d", s.index))
+	if err := os.MkdirAll(s.userDataDir, 0o700); err != nil {
 		ln.Close()
 		return fmt.Errorf("chromium scraper: failed to create user-data-dir: %w", err)
-	}
-
-	s.userDataDir, err = os.MkdirTemp(cacheDir, "solimen-chromium-*")
-	if err != nil {
-		ln.Close()
-		return fmt.Errorf("chromium scraper: failed to generate temp dir name: %w", err)
 	}
 
 	// 3. Write runtime-config.json with only the port; triggers are sent dynamically.
@@ -149,6 +151,12 @@ func (s *ChromiumScraper) Start() error {
 		"--disable-extensions-except=" + absExtDir,
 		"--load-extension=" + absExtDir,
 		"--user-data-dir=" + s.userDataDir,
+		fmt.Sprintf("--disk-cache-size=%d", diskCacheBytes),
+		// Component/Widevine/TTS/Safe-Browsing payloads are ~100 MB per profile and
+		// are dead weight for a scraper. The extension is loaded from disk, so it is
+		// unaffected.
+		"--disable-background-networking",
+		"--disable-component-update",
 		"--no-first-run",
 		"--no-default-browser-check",
 	}
