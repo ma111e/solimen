@@ -1,5 +1,7 @@
 # solimen
 
+![A plain HTTP client sees an empty shell; solimen waits for the JavaScript to run and returns the fully-rendered DOM.](docs/img/hero.svg)
+
 A Chromium-backed DOM scraping service. `solimen` renders a page in a real
 Chromium browser, waits for caller-defined CSS selectors to appear, and returns
 the fully-rendered DOM as HTML, Markdown, or PDF over a small HTTP API.
@@ -7,6 +9,11 @@ the fully-rendered DOM as HTML, Markdown, or PDF over a small HTTP API.
 Because it drives an actual browser rather than fetching raw HTML, it captures
 content produced by JavaScript and single-page apps that a plain HTTP client
 would miss.
+
+Running a genuine Chromium browser means many "checking your browser"
+interstitials and JavaScript challenges (e.g. Cloudflare-style checks) resolve on
+their own before the DOM is exported. Note that `solimen` is not a CAPTCHA solver: pages that require human interaction or active
+anti-automation measures may still block it.
 
 ## How it works
 
@@ -23,9 +30,29 @@ Each scrape flows through that browser:
 5. The rendered DOM is posted back to the server, correlated by request ID, and
    returned in the requested formats.
 
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant S as solimen server
+    participant E as Extension (bg worker)
+    participant T as Background tab
+    C->>S: POST /scrape { url, triggers, formats }
+    S->>E: scrape cmd (request UUID) over WebSocket
+    E->>T: open tab for URL
+    T->>T: content script watches DOM (MutationObserver) until triggers match
+    T->>E: rendered DOM
+    E->>S: DOM (correlated by UUID)
+    S->>C: { state, html / markdown / pdf }
+```
+
 Running `--instances N` starts N independent Chromium instances and dispatches
 requests round-robin. Concurrent requests for the same URL are de-duplicated so
 only one tab is opened and all callers share the result.
+
+Each instance keeps its browser profile at `$XDG_CACHE_HOME/solimen/instance-N`
+(`~/.cache/solimen/instance-N` by default) and reuses it across restarts, so
+cookies and sessions persist and disk usage stays bounded by `--instances`. Set
+`XDG_CACHE_HOME` to run two deployments side by side on one host.
 
 ## Requirements
 
@@ -68,10 +95,19 @@ make build            # builds ./solimen
 go build ./cmd/solimen
 ```
 
-Build the Docker image:
+`solimen --version` reports the build version.
+
+Build the Docker image for local development:
 
 ```bash
 docker compose -f docker/docker-compose.yml build
+```
+
+To build the release artifacts (cross-platform binaries and the release image)
+locally without publishing, use GoReleaser:
+
+```bash
+make snapshot         # goreleaser release --snapshot --clean
 ```
 
 ## Usage
@@ -202,6 +238,16 @@ The compose file drops all Linux capabilities and disables the Chromium sandbox
 (`SOLIMEN_USE_SANDBOX=false`), which is the supported configuration for most
 container runtimes.
 
+Two separate variables control the two addresses involved. `SOLIMEN_BIND_ADDR`
+(compose only, default `127.0.0.1`) is the address on the host the port is
+published on; `SOLIMEN_HOST` (default `0.0.0.0`) is the address solimen listens
+on inside the container and should be left alone.
+
+> **The API is unauthenticated.** `/scrape` fetches any URL a caller supplies, so
+> a publicly reachable instance is an open proxy into whatever network it can
+> reach. Keep `SOLIMEN_BIND_ADDR` on a loopback or private address and put an
+> authenticating reverse proxy in front of it if it needs to be reachable.
+
 A commented-out seccomp profile (`docker/seccomp/chrome.json`) is also included.
 The intent was to keep the Chromium sandbox enabled while still running the
 container as an unprivileged user, since the sandbox otherwise needs elevated
@@ -210,7 +256,29 @@ left in place only as a starting point for anyone who wants to pursue that setup
 It is currently not a supported feature.
 
 A production compose file using the published `ghcr.io/ma111e/solimen` image is in
-[docker/prod/docker-compose.prod.yml](docker/prod/docker-compose.prod.yml).
+[docker/prod/docker-compose.prod.yml](docker/prod/docker-compose.prod.yml). It
+pulls rather than builds, and `SOLIMEN_VERSION` selects the tag (defaulting to
+`latest`); pin it to a released version for production:
+
+```bash
+SOLIMEN_VERSION=v1.0 docker compose -f docker/prod/docker-compose.prod.yml up -d
+```
+
+## Releases
+
+Releases are tag-driven. Pushing a `vX.Y.Z` tag runs the GitHub Actions release
+workflow ([.github/workflows/release.yml](.github/workflows/release.yml)), which
+uses [GoReleaser](https://goreleaser.com) to:
+
+- build the cross-platform binaries (Linux, macOS, Windows; amd64 and arm64) and
+  attach them, with checksums and a generated changelog, to a GitHub Release;
+- build and push the Docker image to `ghcr.io/ma111e/solimen`, tagged with the
+  version, the `vX.Y` minor line, and `latest`.
+
+```bash
+git tag v1.0.7
+git push origin v1.0.7
+```
 
 ## Project layout
 
@@ -222,7 +290,9 @@ cmd/solimen/
   extension/         embedded Manifest V3 extension (background + content scripts)
 pkg/chromium/        Chromium scraper and round-robin pool
 pkg/models/          shared types (trigger definitions)
-docker/              Dockerfile, compose files, supervisor config
+docker/              Dockerfiles (dev + release), compose files, supervisor config
+.github/workflows/   release pipeline
+.goreleaser.yaml     build, archive, and image release configuration
 ```
 
 ## License
