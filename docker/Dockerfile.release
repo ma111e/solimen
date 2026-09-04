@@ -1,24 +1,6 @@
-FROM golang:1.25-bookworm AS builder
-
-ARG VERSION=unknown
-
-WORKDIR /build
-
-# Copy go mod files first for better caching
-COPY go.mod go.sum ./
-RUN go mod download
-
-# Copy only required source files for build
-COPY cmd/solimen cmd/solimen
-COPY pkg/ pkg/
-
-RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o solimen ./cmd/solimen
-
+# Runtime image for GoReleaser. The solimen binary is built by GoReleaser and
+# copied in from the build context; the extension is embedded in the binary.
 FROM debian:bookworm-slim
-
-ARG VERSION=unknown
-
-LABEL org.opencontainers.image.version=${VERSION}
 
 RUN adduser --disabled-password --gecos "" --shell /usr/sbin/nologin appuser
 
@@ -60,13 +42,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Copy the binary from builder
-COPY --from=builder /build/solimen /app/solimen
+# Binary produced by GoReleaser, placed at the root of the build context.
+COPY solimen /app/solimen
 
-# Copy the extension directory
-COPY --from=builder /build/cmd/solimen/extension /app/extension
-
-# Copy supervisor configuration
+# Supervisor configuration (Xvfb + solimen).
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Handle directories and lock down permissions

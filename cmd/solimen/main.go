@@ -24,6 +24,9 @@ import (
 //go:embed extension
 var embeddedExtension embed.FS
 
+// version is set at build time via -ldflags "-X main.version=...".
+var version = "dev"
+
 func init() {
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp: true,
@@ -124,8 +127,9 @@ func prepareExtDirs(extDirSet bool, extDir string, n int) ([]string, func(), err
 
 func main() {
 	rootCmd := &cobra.Command{
-		Use:   "solimen",
-		Short: "Chromium-backed DOM scraping service",
+		Use:     "solimen",
+		Short:   "Chromium-backed DOM scraping service",
+		Version: version,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			viper.SetEnvPrefix("SOLIMEN")
 			viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))

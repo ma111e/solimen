@@ -1,0 +1,83 @@
+version: 2
+
+project_name: solimen
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: solimen
+    main: ./cmd/solimen
+    binary: solimen
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - id: solimen
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    files:
+      - README.md
+      - LICENSE
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc
+  use: github
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\(.+\))??!?:.*$'
+      order: 0
+    - title: Bug fixes
+      regexp: '^.*?fix(\(.+\))??!?:.*$'
+      order: 1
+    - title: Others
+      order: 999
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+
+dockers:
+  - id: solimen
+    goos: linux
+    goarch: amd64
+    dockerfile: docker/Dockerfile.release
+    image_templates:
+      - ghcr.io/ma111e/solimen:{{ .Version }}
+      - ghcr.io/ma111e/solimen:v{{ .Major }}.{{ .Minor }}
+      - ghcr.io/ma111e/solimen:latest
+    build_flag_templates:
+      - --label=org.opencontainers.image.title={{ .ProjectName }}
+      - --label=org.opencontainers.image.version={{ .Version }}
+      - --label=org.opencontainers.image.revision={{ .FullCommit }}
+      - --label=org.opencontainers.image.source=https://github.com/ma111e/solimen
+    extra_files:
+      - docker/supervisord.conf
+
+release:
+  github:
+    owner: ma111e
+    name: solimen
+  prerelease: auto

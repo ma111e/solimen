@@ -1,6 +1,9 @@
 # Binary
 /solimen
 
+# GoReleaser output
+/dist/
+
 # Environment
 .env
 !.env.example
