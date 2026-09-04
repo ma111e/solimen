@@ -3,7 +3,7 @@ services:
     image: ghcr.io/ma111e/solimen:${SOLIMEN_VERSION:-latest}
     container_name: solimen
     ports:
-      - "${SOLIMEN_HOST:-127.0.0.1}:${SOLIMEN_PORT:-5011}:${SOLIMEN_PORT:-5011}"
+      - "${SOLIMEN_BIND_ADDR:-127.0.0.1}:${SOLIMEN_PORT:-5011}:${SOLIMEN_PORT:-5011}"
     environment:
       - SOLIMEN_PORT=${SOLIMEN_PORT:-5011}
       - SOLIMEN_HOST=${SOLIMEN_HOST:-0.0.0.0}

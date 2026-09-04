@@ -5,7 +5,7 @@ services:
       dockerfile: docker/Dockerfile
     container_name: solimen_test
     ports:
-      - "${SOLIMEN_HOST:-127.0.0.1}:${SOLIMEN_PORT:-5011}:${SOLIMEN_PORT:-5011}"
+      - "${SOLIMEN_BIND_ADDR:-127.0.0.1}:${SOLIMEN_PORT:-5011}:${SOLIMEN_PORT:-5011}"
     environment:
       - SOLIMEN_PORT=${SOLIMEN_PORT:-5011}
       - SOLIMEN_HOST=${SOLIMEN_HOST:-0.0.0.0}
