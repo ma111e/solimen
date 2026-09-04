@@ -2,13 +2,21 @@
 .git
 .gitignore
 
-# Docker
-docker/
-Dockerfile
-docker-compose.yml
+# Docker build metadata. Note docker/ itself must stay in the context:
+# both Dockerfiles COPY docker/supervisord.conf.
+docker/Dockerfile
+docker/Dockerfile.release
+docker/docker-compose.yml
+docker/prod/
+docker/seccomp/
 .dockerignore
 
+# Environment
+**/.env
+!docker/.env.example
+
 # Build artifacts
+dist/
 solimen
 server
 cli
@@ -17,9 +25,10 @@ cli
 *.so
 *.dylib
 
-# IDE
+# IDE / tooling
 .idea/
 .vscode/
+.claude/
 *.swp
 *.swo
 *~
